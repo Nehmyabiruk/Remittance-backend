@@ -1,0 +1,95 @@
+// Get user's notifications (newest first)
+exports.getNotifications = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { limit = 20, unreadOnly = false } = req.query;
+
+    let query = `
+      SELECT * FROM notifications 
+      WHERE user_id = $1
+    `;
+
+    const params = [userId];
+
+    if (unreadOnly === 'true') {
+      query += ` AND is_read = false`;
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT $2`;
+    params.push(parseInt(limit));
+
+    const result = await pool.query(query, params);
+
+    res.json({
+      success: true,
+      notifications: result.rows
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Failed to fetch notifications" });
+  }
+};
+
+// Optional: Get unread count only (for red badge)
+exports.getUnreadCount = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await pool.query(
+      `SELECT COUNT(*) as unread_count 
+       FROM notifications 
+       WHERE user_id = $1 AND is_read = false`,
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      unreadCount: parseInt(result.rows[0].unread_count)
+    });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
+// POST /api/notifications (PostgreSQL version)
+router.post("/", authMiddleware, async (req, res) => {
+  try {
+    const { recipientEmail, title, message, type, data } = req.body;
+
+    let userId;
+
+    if (recipientEmail) {
+      // 🔥 Find receiver in PostgreSQL
+      const userResult = await pool.query(
+        "SELECT id FROM users WHERE email = $1",
+        [recipientEmail]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ message: "Receiver not found" });
+      }
+
+      userId = userResult.rows[0].id;
+    } else {
+      // Sender
+      userId = req.user.id;
+    }
+
+    // 🔥 Insert notification into PostgreSQL
+    const result = await pool.query(
+      `INSERT INTO notifications (user_id, title, message, type, data, is_read, created_at)
+       VALUES ($1, $2, $3, $4, $5, false, NOW())
+       RETURNING *`,
+      [userId, title, message, type, JSON.stringify(data)]
+    );
+
+    res.json({
+      success: true,
+      notification: result.rows[0],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Notification failed",
+    });
+  }
+});
