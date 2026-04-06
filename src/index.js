@@ -1,19 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-app.use(cors({ origin: true })); // allow all for now
 
+// MUST define app FIRST
 const app = express();
 
-// Now you can use app
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use('/api/notifications', require('./routes/notificationRoutes'));
-app.use("/api/transactions", require("./routes/transactionRoutes"));
-
-// Simple root route to test server is alive
+// Simple test route
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
@@ -22,7 +18,11 @@ app.get("/", (req, res) => {
 const authRoutes = require('./routes/authroutes');
 app.use('/api/auth', authRoutes);
 
+// Transactions routes
+app.use("/api/transactions", require("./routes/transactionRoutes"));
+
 // Start server
-app.listen(5000, () => {
-  console.log("Server is running on port 5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
