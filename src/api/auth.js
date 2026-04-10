@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api/auth", // NO trailing slash here
+  baseURL: "https://remittance-frontend-olive.vercel.app/", // NO trailing slash here
 });
 
 // Optional: add token to every request after login

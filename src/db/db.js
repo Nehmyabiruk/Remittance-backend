@@ -1,13 +1,24 @@
-// db.js
 const { Pool } = require('pg');
-require('dotenv').config(); // ← add this (npm install dotenv)
+
+// Force using the environment variable
+console.log("DATABASE_URL being used:", process.env.DATABASE_URL ? "Yes (starts with " + process.env.DATABASE_URL.substring(0, 50) + "...)" : "MISSING!");
 
 const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'remittance bank login', // consider renaming to remittance_bank (no spaces)
-  password: process.env.DB_PASSWORD || '017231',
-  port: process.env.DB_PORT || 5432,
+  connectionString: process.env.DATABASE_URL,   // ← Must use this
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
+
+// Test connection on startup (very helpful)
+pool.connect()
+  .then(client => {
+    console.log('✅ Successfully connected to PostgreSQL using External URL');
+    client.release();
+  })
+  .catch(err => {
+    console.error('❌ DB Connection Failed:', err.message);
+    console.error('Full error:', err);
+  });
 
 module.exports = pool;

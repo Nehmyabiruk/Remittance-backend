@@ -1,6 +1,14 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+// At the very top of src/index.js
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();   // Only load local .env when running on your computer
+} else {
+  console.log("Running in PRODUCTION - using Render environment variables");
+}
+
+
+
 
 // MUST define app FIRST
 const app = express();
